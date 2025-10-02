@@ -1,25 +1,24 @@
-using Unity.Cinemachine;
+using System;
 using UnityEngine;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(Outline))]
 public class Computer : MonoBehaviour, IInteractable
 {
+    [SerializeField] private KeyCode _prompt;
     [SerializeField] private CameraController _cameraController;
     [SerializeField] private float _outlineWidth = 3f;
-    [SerializeField] private KeyCode _prompt;
-    
     [SerializeField] private Canvas _screen;
-    [SerializeField] private Button _closeButton;
-    [SerializeField] private Button _createButton;
-    [SerializeField] private Button _deleteButton;
     
     private Outline _outline;
     private Movement _movement = null;
-
+    private bool _isOpen;
+    
     public KeyCode Prompt => _prompt;
     
     public bool CanInteract { get; set; }
+
+    public event Action ScreenOpened;
+    public event Action ScreenClosed;
 
     private void Awake()
     {
@@ -28,7 +27,9 @@ public class Computer : MonoBehaviour, IInteractable
 
     private void Start()
     {
+        _screen.gameObject.SetActive(false);
         _outline.OutlineWidth = 0;
+        _isOpen = false;
     }
 
     private void Update()
@@ -42,10 +43,17 @@ public class Computer : MonoBehaviour, IInteractable
         _movement.CanMove = true;
         
         _cameraController.EnableCameraMovement();
+        
+        _isOpen = false;
+        
+        ScreenClosed?.Invoke();
     }
     
     public void Interact(Interactor interactor, Movement movement)
     {
+        if (CanInteract == false || _isOpen)
+            return;
+        
         _screen.gameObject.SetActive(true);
         Cursor.lockState = CursorLockMode.Confined;
 
@@ -53,5 +61,9 @@ public class Computer : MonoBehaviour, IInteractable
         
         _movement = movement;
         _movement.CanMove = false;
+
+        _isOpen = true;
+        
+        ScreenOpened?.Invoke();
     }
 }
